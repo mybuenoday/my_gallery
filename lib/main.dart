@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -34,6 +35,9 @@ class _MyGalleryAppState extends State<MyGalleryApp> {
   final ImagePicker _picker = ImagePicker();
   List<XFile>? images;
 
+  int currentPage = 0;
+  final pageController = PageController();
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +48,24 @@ class _MyGalleryAppState extends State<MyGalleryApp> {
   // 사진을 가져오는 작업은 오래 걸리기 때문에 Future ... async
   Future<void> loadImages() async {
     images = await _picker.pickMultiImage();
+
+    if (images != null) {
+      // 정해진 시간이 지나면 이미지 전환환
+      Timer.periodic(const Duration(seconds: 5), (timer) {
+        currentPage++;
+
+        if (currentPage > images!.length - 1) {
+          currentPage = 0;
+        }
+
+        // 숫자에 따라 실제로 PageView를 움직이는 건 controller
+        pageController.animateToPage(
+          currentPage,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeIn,
+        );
+      });
+    }
     //images 데이터가 바뀐 걸 화면에 알려주기 위해 setState. 화면 갱신.
     setState(() {});
   }
@@ -57,6 +79,7 @@ class _MyGalleryAppState extends State<MyGalleryApp> {
       body: images == null
           ? const Center(child: Text('No data'))
           : PageView(
+              controller: pageController,
               children: images!.map((image) {
                 return FutureBuilder<Uint8List>(
                     future: image.readAsBytes(),
